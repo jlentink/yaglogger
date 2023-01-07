@@ -10,6 +10,19 @@ yaglogger is a simple logger for Go. It allows to log in color to screen and to 
 ```bash
  go get -u github.com/jlentink/yaglogger
 ```
+
+## Direct usage
+```go
+package main
+
+import (
+	log "github.com/jlentink/yaglogger"
+)
+
+func main() {
+	log.Debug("Debug")
+}
+```
  
 ## Default logger
 
