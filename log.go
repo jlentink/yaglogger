@@ -19,8 +19,8 @@ type Logger struct {
 	LogFile     *os.File
 }
 
-// NewLogger creates a new logger
-func NewLogger() *Logger {
+// New creates a new logger
+func New() *Logger {
 	return &Logger{
 		Level: LevelInfo,
 		Output: LevelOutput{
