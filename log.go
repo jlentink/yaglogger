@@ -60,6 +60,8 @@ func (l *Logger) Log(level level, message string, a ...any) {
 func (l *Logger) logFileOpen() *os.File {
 	file, err := os.OpenFile(l.LogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
+		//nolint:errcheck
+		//goland:noinspection GoUnhandledErrorResult
 		fmt.Fprintf(os.Stderr, "Error opening log file: %v", err)
 		os.Exit(1)
 	}
@@ -86,6 +88,7 @@ func (l *Logger) screenLog(level level, message, logDate string, a ...any) {
 		}
 	}
 	logline := fmt.Sprintf("[ "+logDate+logLevel+" ] "+message+"\n", a...)
+	//goland:noinspection GoUnhandledErrorResult
 	fmt.Fprint(l.LevelOutput(level), logline)
 }
 
@@ -98,6 +101,7 @@ func (l *Logger) fileLog(level level, message, logDate string, a ...any) {
 	if l.ShowLevel {
 		logLevel = l.LevelName(level)
 	}
+	//goland:noinspection GoUnhandledErrorResult
 	fmt.Fprintf(l.LogFile, "[ "+logDate+logLevel+" ] "+message+"\n", a...)
 }
 
@@ -130,4 +134,10 @@ func (l *Logger) Error(message string, a ...any) {
 func (l *Logger) Fatal(message string, a ...any) {
 	l.Log(LevelFatal, message, a...)
 	os.Exit(1)
+}
+
+// Panic logs a message with level fatal
+func (l *Logger) Panic(message string, a ...any) {
+	l.Log(LevelFatal, message, a...)
+	panic(fmt.Sprintf(message, a...))
 }
