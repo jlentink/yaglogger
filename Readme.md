@@ -1,5 +1,5 @@
 # yaglogger (Yet another Go Logger)
-[![GoDoc](https://godoc.org/github.com/jlentink/yaglogger?status.svg)](https://godoc.org/github.com/0xAX/yaglogger)
+[![GoDoc](https://godoc.org/github.com/jlentink/yaglogger?status.svg)](https://godoc.org/github.com/jlentink/yaglogger)
 [![Go Report Card](https://goreportcard.com/badge/github.com/jlentink/yaglogger)](https://goreportcard.com/report/github.com/jlentink/yaglogger)
 [![Coverage Status](https://coveralls.io/repos/github/jlentink/yaglogger/badge.svg?branch=master)](https://coveralls.io/github/jlentink/yaglogger?branch=master)
 
