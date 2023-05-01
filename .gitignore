@@ -19,3 +19,6 @@ go.work
 
 # Goland
 .idea
+/examples/log-to-screen/log-to-screen
+/yaglogger.log
+/lint.txt

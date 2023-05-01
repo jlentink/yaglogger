@@ -2,46 +2,43 @@ package yaglogger
 
 import (
 	"fmt"
-	"github.com/logrusorgru/aurora/v3"
+	"github.com/logrusorgru/aurora/v4"
+	"io"
 	"os"
+	"reflect"
+	"strings"
 	"time"
 )
 
 // Logger Struture
 type Logger struct {
-	Level       level
-	Output      LevelOutput
-	ShowLevel   bool
-	ShowDate    bool
-	Color       bool
-	LogToScreen bool
-	LogFilePath string
-	LogFile     *os.File
+	Level        level
+	Output       LevelOutput
+	Format       Format
+	LogToScreen  bool
+	LogFilePath  string
+	LogFile      io.Writer
+	au           *aurora.Aurora
+	ForceNewLine bool
 }
 
-// New creates a new logger
-func New() *Logger {
-	return &Logger{
-		Level: LevelInfo,
-		Output: LevelOutput{
-			Fatal: os.Stderr,
-			Error: os.Stderr,
-			Warn:  os.Stdout,
-			Info:  os.Stdout,
-			Debug: os.Stdout,
-			Trace: os.Stdout,
-		},
-		ShowDate:    true,
-		ShowLevel:   true,
-		Color:       true,
-		LogToScreen: true,
-		LogFilePath: "",
-	}
+// EnableColors enables/disables colors
+func (l *Logger) EnableColors(c bool) {
+	l.Format.Color = c
+	l.au = aurora.New(aurora.WithColors(c))
+}
+
+// GetColours returns the aurora instance
+func (l *Logger) GetColours() *aurora.Aurora {
+	return l.au
 }
 
 // Log is the generic logging function
 func (l *Logger) Log(level level, message string, a ...any) {
-	var logDate = time.Now().Format("2006-01-02 15:04:05")
+	var logDate = time.Now().Format(l.Format.DateLayout)
+
+	message = strings.TrimSuffix(message, "\n")
+	message = strings.TrimSuffix(message, "\r")
 
 	if l.IsLogLevelEnabled(level) {
 		if l.LogToScreen {
@@ -57,7 +54,7 @@ func (l *Logger) Log(level level, message string, a ...any) {
 	}
 }
 
-func (l *Logger) logFileOpen() *os.File {
+func (l *Logger) logFileOpen() io.Writer {
 	file, err := os.OpenFile(l.LogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		//nolint:errcheck
@@ -70,39 +67,38 @@ func (l *Logger) logFileOpen() *os.File {
 
 func (l *Logger) screenLog(level level, message, logDate string, a ...any) {
 	var logLevel string
-	if l.ShowDate {
-		if l.Color {
+	if l.Format.ShowDate {
+		if l.Format.Color {
 			logDate = aurora.Sprintf(aurora.Bold(logDate))
 		}
-		if l.ShowLevel {
+		if l.Format.ShowLevel {
 			logDate = logDate + " - "
 		}
 	} else {
 		logDate = ""
 	}
 
-	if l.ShowLevel {
+	if l.Format.ShowLevel {
 		logLevel = l.LevelName(level)
-		if l.Color {
+		if l.Format.Color {
 			logLevel = aurora.Sprintf(l.LevelColor(level, aurora.Bold(logLevel)))
 		}
 	}
-	logline := fmt.Sprintf("[ "+logDate+logLevel+" ] "+message+"\n", a...)
-	//goland:noinspection GoUnhandledErrorResult
-	fmt.Fprint(l.LevelOutput(level), logline)
+	logLine := fmt.Sprintf("[ "+logDate+logLevel+" ] "+message+l.Format.EndOfLine, a...)
+	_, _ = l.Fprint(l.LevelOutput(level), logLine)
 }
 
 func (l *Logger) fileLog(level level, message, logDate string, a ...any) {
 	var logLevel string
-	if !l.ShowDate {
+	if !l.Format.ShowDate {
 		logDate = ""
 	}
 
-	if l.ShowLevel {
+	if l.Format.ShowLevel {
 		logLevel = l.LevelName(level)
 	}
 	//goland:noinspection GoUnhandledErrorResult
-	fmt.Fprintf(l.LogFile, "[ "+logDate+logLevel+" ] "+message+"\n", a...)
+	fmt.Fprintf(l.LogFile, "[ "+logDate+logLevel+" ] "+message+l.Format.EndOfLine, a...)
 }
 
 // Trace logs a message with level trace
@@ -131,13 +127,164 @@ func (l *Logger) Error(message string, a ...any) {
 }
 
 // Fatal logs a message with level fatal
-func (l *Logger) Fatal(message string, a ...any) {
+func (l *Logger) Fatal(v ...any) {
+	message := fmt.Sprint(v...)
+	l.Log(LevelFatal, message)
+	os.Exit(1)
+}
+
+func (l *Logger) Fatalln(v ...any) {
+	message := fmt.Sprintln(v...)
+	l.Log(LevelFatal, message)
+	os.Exit(1)
+}
+
+// Fatalf logs a message with level fatal
+func (l *Logger) Fatalf(message string, a ...any) {
 	l.Log(LevelFatal, message, a...)
 	os.Exit(1)
 }
 
 // Panic logs a message with level fatal
-func (l *Logger) Panic(message string, a ...any) {
+func (l *Logger) Panic(v ...any) {
+	message := fmt.Sprint(v...)
+	l.Log(LevelFatal, message)
+	panic(l.newLine(fmt.Sprint(message)))
+}
+
+// Panic logs a message with level fatal
+func (l *Logger) Panicf(message string, a ...any) {
 	l.Log(LevelFatal, message, a...)
-	panic(fmt.Sprintf(message, a...))
+	panic(l.newLine(fmt.Sprintf(message, a...)))
+}
+
+// LevelOutput returns the output stream for the given level
+func (l *Logger) LevelOutput(level level) io.Writer {
+	switch level {
+	case LevelFatal:
+		return l.Output.Fatal
+	case LevelError:
+		return l.Output.Error
+	case LevelWarn:
+		return l.Output.Warn
+	case LevelInfo:
+		return l.Output.Info
+	case LevelDebug:
+		return l.Output.Debug
+	case LevelTrace:
+		return l.Output.Trace
+	default:
+		return os.Stdout
+	}
+}
+
+// LevelName returns the name of the given level
+func (l *Logger) LevelName(level level) string {
+	switch level {
+	case LevelFatal:
+		return "  FATAL  "
+	case LevelError:
+		return "  ERROR  "
+	case LevelWarn:
+		return " WARNING "
+	case LevelInfo:
+		return "  INFO   "
+	case LevelDebug:
+		return "  DEBUG  "
+	case LevelTrace:
+		return "  TRACE  "
+	default:
+		return " UNKNOWN "
+	}
+}
+
+// LevelColor returns the color of the given level
+func (l *Logger) LevelColor(level level, message any) aurora.Value {
+	switch level {
+	case LevelFatal:
+		return aurora.Red(message)
+	case LevelError:
+		return aurora.Magenta(message)
+	case LevelWarn:
+		return aurora.Yellow(message)
+	case LevelInfo:
+		return aurora.Green(message)
+	case LevelDebug:
+		return aurora.Cyan(message)
+	case LevelTrace:
+		return aurora.White(message)
+	default:
+		return aurora.White(message)
+	}
+}
+
+// IsLogLevelEnabled returns true if the given level is enabled
+func (l *Logger) IsLogLevelEnabled(level level) bool {
+	return l.Level >= level
+}
+
+// SetLevel sets the log level
+func (l *Logger) SetLevel(level level) *Logger {
+	if level >= LevelFatal && level <= LevelAll {
+		l.Level = level
+	}
+	return l
+}
+
+// SetDebug sets the log level to debug
+func (l *Logger) SetDebug(d bool) *Logger {
+	if d {
+		l.Level = LevelDebug
+	} else {
+		l.Level = LevelInfo
+	}
+	return l
+}
+
+func (l *Logger) isInstanceOf(object, objectType interface{}) bool {
+	return reflect.TypeOf(object) == reflect.TypeOf(objectType)
+}
+
+func (l *Logger) newLine(in string) string {
+	if l.ForceNewLine && !strings.HasSuffix(in, l.Format.EndOfLine) {
+		return in + l.Format.EndOfLine
+	}
+	return in
+}
+
+// Print prints message
+func (l *Logger) Print(v ...any) {
+	l.Fprint(l.Output.Msg, fmt.Sprint(v...))
+}
+
+// Printf prints message with formatting
+func (l *Logger) Printf(format string, a ...any) {
+	l.Fprintf(l.Output.Msg, format, a...)
+}
+
+// PrintDebug prints message with debug level
+func (l *Logger) PrintDebug(format any) {
+	if l.IsLogLevelEnabled(LevelDebug) {
+		if l.isInstanceOf(format, aurora.Value{}) {
+			format = aurora.Sprintf("%s", format)
+		}
+		l.Fprint(l.Output.Msg, format)
+	}
+}
+
+// PrintDebugf prints message with debug level and formatting
+func (l *Logger) PrintDebugf(format string, a ...any) {
+	if l.IsLogLevelEnabled(LevelDebug) {
+		l.Fprintf(l.Output.Msg, format, a...)
+	}
+}
+
+func (l *Logger) Fprint(w io.Writer, a ...any) (n int, err error) {
+	format := l.newLine(fmt.Sprint(a...))
+	return fmt.Fprint(w, format)
+}
+
+func (l *Logger) Fprintf(w io.Writer, format string, a ...any) (n int, err error) {
+	format = l.newLine(format)
+	return fmt.Fprintf(w, format, a...)
 }

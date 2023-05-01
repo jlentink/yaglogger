@@ -2,4 +2,4 @@ module github.com/jlentink/yaglogger
 
 go 1.19
 
-require github.com/logrusorgru/aurora/v3 v3.0.0 // indirect
+require github.com/logrusorgru/aurora/v4 v4.0.0

@@ -8,4 +8,7 @@ init:
 	@chmod +x .git/hooks/pre-commit
 
 lint:
-	golangci-lint run ./...
+	golangci-lint run
+
+test:
+	go test -v ./...

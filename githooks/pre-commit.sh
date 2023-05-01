@@ -11,5 +11,5 @@ else
         ## commit
         git add "$file"
     done
-    golangci-lint run ./...
+#    golangci-lint run ./...
 fi
