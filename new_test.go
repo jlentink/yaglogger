@@ -12,24 +12,6 @@ func TestNew(t *testing.T) {
 		t.Errorf("Expected Level to be LevelInfo, got %v", logger.Level)
 	}
 
-	//// Verify Output fields
-	//expectedOutputs := map[LogLevel]*os.File{
-	//	Fatal:    os.Stderr,
-	//	Error:    os.Stderr,
-	//	Warn:     os.Stdout,
-	//	Info:     os.Stdout,
-	//	Debug:    os.Stdout,
-	//	Trace:    os.Stdout,
-	//	Msg:      os.Stdout,
-	//	DebugMsg: os.Stdout,
-	//}
-	//
-	//for level, expectedOutput := range expectedOutputs {
-	//	if logger.Output[level] != expectedOutput {
-	//		t.Errorf("Expected Output[%v] to be %v, got %v", level, expectedOutput, logger.Output[level])
-	//	}
-	//}
-
 	// Verify Format fields
 	if !logger.Format.ShowDate {
 		t.Error("Expected ShowDate to be true")

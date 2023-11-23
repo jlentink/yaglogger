@@ -3,6 +3,7 @@ package yaglogger
 import (
 	"fmt"
 	"github.com/logrusorgru/aurora/v4"
+	"github.com/mattn/go-isatty"
 	"io"
 	"os"
 	"reflect"
@@ -24,21 +25,21 @@ type Logger struct {
 
 func (l *Logger) SetLevelByString(level string) LogLevel {
 	switch strings.ToLower(level) {
-	case "fatal":
+	case LevelFatal.String():
 		l.Level = LevelFatal
-	case "error":
+	case LevelError.String():
 		l.Level = LevelError
-	case "warn", "warning":
+	case LevelWarn.String(), "warning":
 		l.Level = LevelWarn
-	case "info":
+	case LevelInfo.String():
 		l.Level = LevelInfo
-	case "debug":
+	case LevelDebug.String():
 		l.Level = LevelDebug
-	case "trace":
+	case LevelTrace.String():
 		l.Level = LevelTrace
-	case "all":
+	case LevelAll.String():
 		l.Level = LevelAll
-	case "none":
+	case LevelNone.String():
 		l.Level = LevelNone
 	default:
 		l.Level = LevelAll
@@ -92,8 +93,15 @@ func (l *Logger) logFileOpen() io.Writer {
 
 func (l *Logger) screenLog(level LogLevel, message, logDate string, a ...any) {
 	var logLevel string
+	var useColor = l.Format.Color
+
+	if !isatty.IsTerminal(l.LevelOutput(level).Fd()) {
+		useColor = false
+
+	}
+
 	if l.Format.ShowDate {
-		if l.Format.Color {
+		if useColor {
 			logDate = aurora.Sprintf(aurora.Bold(logDate))
 		}
 		if l.Format.ShowLevel {
@@ -105,7 +113,7 @@ func (l *Logger) screenLog(level LogLevel, message, logDate string, a ...any) {
 
 	if l.Format.ShowLevel {
 		logLevel = l.LevelName(level)
-		if l.Format.Color {
+		if useColor {
 			logLevel = aurora.Sprintf(l.LevelColor(level, aurora.Bold(logLevel)))
 		}
 	}
@@ -184,7 +192,7 @@ func (l *Logger) Panicf(message string, a ...any) {
 }
 
 // LevelOutput returns the output stream for the given level
-func (l *Logger) LevelOutput(level LogLevel) io.Writer {
+func (l *Logger) LevelOutput(level LogLevel) *os.File {
 	switch level {
 	case LevelFatal:
 		return l.Output.Fatal

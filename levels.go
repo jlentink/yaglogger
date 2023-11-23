@@ -1,7 +1,7 @@
 package yaglogger
 
 import (
-	"io"
+	"os"
 )
 
 // Level type
@@ -36,12 +36,12 @@ func (l LogLevel) String() string {
 
 // LevelOutput defines the output stream for screen
 type LevelOutput struct {
-	Fatal    io.Writer
-	Error    io.Writer
-	Warn     io.Writer
-	Info     io.Writer
-	Debug    io.Writer
-	Trace    io.Writer
-	Msg      io.Writer
-	DebugMsg io.Writer
+	Fatal    *os.File
+	Error    *os.File
+	Warn     *os.File
+	Info     *os.File
+	Debug    *os.File
+	Trace    *os.File
+	Msg      *os.File
+	DebugMsg *os.File
 }
