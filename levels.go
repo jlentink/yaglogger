@@ -5,18 +5,34 @@ import (
 )
 
 // Level type
-type level uint
+type LogLevel uint
 
 // All log levels
 const (
-	LevelFatal level = iota
+	LevelFatal LogLevel = iota
 	LevelError
 	LevelWarn
 	LevelInfo
 	LevelDebug
 	LevelTrace
 	LevelAll
+	LevelNone
 )
+
+var levelNames = map[LogLevel]string{
+	LevelFatal: "fatal",
+	LevelError: "error",
+	LevelWarn:  "warn",
+	LevelInfo:  "info",
+	LevelDebug: "debug",
+	LevelTrace: "trace",
+	LevelAll:   "all",
+	LevelNone:  "none",
+}
+
+func (l LogLevel) String() string {
+	return levelNames[l]
+}
 
 // LevelOutput defines the output stream for screen
 type LevelOutput struct {

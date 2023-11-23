@@ -12,7 +12,7 @@ import (
 
 // Logger Struture
 type Logger struct {
-	Level        level
+	Level        LogLevel
 	Output       LevelOutput
 	Format       Format
 	LogToScreen  bool
@@ -22,14 +22,13 @@ type Logger struct {
 	ForceNewLine bool
 }
 
-func (l *Logger) SetLevelByString(level string) {
-
+func (l *Logger) SetLevelByString(level string) LogLevel {
 	switch strings.ToLower(level) {
 	case "fatal":
 		l.Level = LevelFatal
 	case "error":
 		l.Level = LevelError
-	case "warn":
+	case "warn", "warning":
 		l.Level = LevelWarn
 	case "info":
 		l.Level = LevelInfo
@@ -39,9 +38,13 @@ func (l *Logger) SetLevelByString(level string) {
 		l.Level = LevelTrace
 	case "all":
 		l.Level = LevelAll
+	case "none":
+		l.Level = LevelNone
 	default:
-		l.Fatalf("Unknown log level: %s", level)
+		l.Level = LevelAll
+		l.Error("Unknown log level: %s", level)
 	}
+	return l.Level
 }
 
 // EnableColors enables/disables colors
@@ -56,7 +59,7 @@ func (l *Logger) GetColours() *aurora.Aurora {
 }
 
 // Log is the generic logging function
-func (l *Logger) Log(level level, message string, a ...any) {
+func (l *Logger) Log(level LogLevel, message string, a ...any) {
 	var logDate = time.Now().Format(l.Format.DateLayout)
 
 	message = strings.TrimSuffix(message, "\n")
@@ -87,7 +90,7 @@ func (l *Logger) logFileOpen() io.Writer {
 	return file
 }
 
-func (l *Logger) screenLog(level level, message, logDate string, a ...any) {
+func (l *Logger) screenLog(level LogLevel, message, logDate string, a ...any) {
 	var logLevel string
 	if l.Format.ShowDate {
 		if l.Format.Color {
@@ -110,7 +113,7 @@ func (l *Logger) screenLog(level level, message, logDate string, a ...any) {
 	_, _ = l.Fprint(l.LevelOutput(level), logLine)
 }
 
-func (l *Logger) fileLog(level level, message, logDate string, a ...any) {
+func (l *Logger) fileLog(level LogLevel, message, logDate string, a ...any) {
 	var logLevel string
 	if !l.Format.ShowDate {
 		logDate = ""
@@ -181,7 +184,7 @@ func (l *Logger) Panicf(message string, a ...any) {
 }
 
 // LevelOutput returns the output stream for the given level
-func (l *Logger) LevelOutput(level level) io.Writer {
+func (l *Logger) LevelOutput(level LogLevel) io.Writer {
 	switch level {
 	case LevelFatal:
 		return l.Output.Fatal
@@ -201,7 +204,7 @@ func (l *Logger) LevelOutput(level level) io.Writer {
 }
 
 // LevelName returns the name of the given level
-func (l *Logger) LevelName(level level) string {
+func (l *Logger) LevelName(level LogLevel) string {
 	switch level {
 	case LevelFatal:
 		return "  FATAL  "
@@ -221,7 +224,7 @@ func (l *Logger) LevelName(level level) string {
 }
 
 // LevelColor returns the color of the given level
-func (l *Logger) LevelColor(level level, message any) aurora.Value {
+func (l *Logger) LevelColor(level LogLevel, message any) aurora.Value {
 	switch level {
 	case LevelFatal:
 		return aurora.Red(message)
@@ -241,12 +244,12 @@ func (l *Logger) LevelColor(level level, message any) aurora.Value {
 }
 
 // IsLogLevelEnabled returns true if the given level is enabled
-func (l *Logger) IsLogLevelEnabled(level level) bool {
+func (l *Logger) IsLogLevelEnabled(level LogLevel) bool {
 	return l.Level >= level
 }
 
 // SetLevel sets the log level
-func (l *Logger) SetLevel(level level) *Logger {
+func (l *Logger) SetLevel(level LogLevel) *Logger {
 	if level >= LevelFatal && level <= LevelAll {
 		l.Level = level
 	}
