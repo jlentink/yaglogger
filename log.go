@@ -22,6 +22,28 @@ type Logger struct {
 	ForceNewLine bool
 }
 
+func (l *Logger) SetLevelByString(level string) {
+
+	switch strings.ToLower(level) {
+	case "fatal":
+		l.Level = LevelFatal
+	case "error":
+		l.Level = LevelError
+	case "warn":
+		l.Level = LevelWarn
+	case "info":
+		l.Level = LevelInfo
+	case "debug":
+		l.Level = LevelDebug
+	case "trace":
+		l.Level = LevelTrace
+	case "all":
+		l.Level = LevelAll
+	default:
+		l.Fatalf("Unknown log level: %s", level)
+	}
+}
+
 // EnableColors enables/disables colors
 func (l *Logger) EnableColors(c bool) {
 	l.Format.Color = c
