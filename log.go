@@ -112,7 +112,7 @@ func (l *Logger) screenLog(level LogLevel, message, logDate string, a ...any) {
 	}
 
 	if l.Format.ShowLevel {
-		logLevel = l.LevelName(level)
+		logLevel = l.CenteredLevelName(level)
 		if useColor {
 			logLevel = aurora.Sprintf(l.LevelColor(level, aurora.Bold(logLevel)))
 		}
@@ -128,7 +128,7 @@ func (l *Logger) fileLog(level LogLevel, message, logDate string, a ...any) {
 	}
 
 	if l.Format.ShowLevel {
-		logLevel = l.LevelName(level)
+		logLevel = l.CenteredLevelName(level)
 	}
 	//goland:noinspection GoUnhandledErrorResult
 	fmt.Fprintf(l.LogFile, "[ "+logDate+logLevel+" ] "+message+l.Format.EndOfLine, a...)
@@ -211,24 +211,13 @@ func (l *Logger) LevelOutput(level LogLevel) *os.File {
 	}
 }
 
-// LevelName returns the name of the given level
-func (l *Logger) LevelName(level LogLevel) string {
-	switch level {
-	case LevelFatal:
-		return "  FATAL  "
-	case LevelError:
-		return "  ERROR  "
-	case LevelWarn:
-		return " WARNING "
-	case LevelInfo:
-		return "  INFO   "
-	case LevelDebug:
-		return "  DEBUG  "
-	case LevelTrace:
-		return "  TRACE  "
-	default:
-		return " UNKNOWN "
-	}
+// CenteredLevelName returns the name of the given level
+func (l *Logger) CenteredLevelName(level LogLevel) string {
+	levelName := strings.ToUpper(level.String())
+	width := 10
+	padding := strings.Repeat(" ", (width-len(levelName))/2)
+	formatted := fmt.Sprintf("%s%s%s", padding, levelName, padding)
+	return formatted[0 : width-1]
 }
 
 // LevelColor returns the color of the given level

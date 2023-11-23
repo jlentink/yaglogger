@@ -81,3 +81,58 @@ func TestLogger_SetLevelByString(t *testing.T) {
 		})
 	}
 }
+
+func TestLogger_CenteredLevelName(t *testing.T) {
+	type fields struct {
+		Level        LogLevel
+		Output       LevelOutput
+		Format       Format
+		LogToScreen  bool
+		LogFilePath  string
+		LogFile      io.Writer
+		au           *aurora.Aurora
+		ForceNewLine bool
+	}
+	type args struct {
+		level LogLevel
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   string
+	}{
+		{
+			name: "TestLogger_CenteredLevelName - fatal",
+			args: args{level: LevelFatal},
+			want: "  FATAL  ",
+		},
+		{
+			name: "TestLogger_CenteredLevelName - error",
+			args: args{level: LevelError},
+			want: "  ERROR  ",
+		},
+		{
+			name: "TestLogger_CenteredLevelName - info",
+			args: args{level: LevelInfo},
+			want: "   INFO  ",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := &Logger{
+				Level:        tt.fields.Level,
+				Output:       tt.fields.Output,
+				Format:       tt.fields.Format,
+				LogToScreen:  tt.fields.LogToScreen,
+				LogFilePath:  tt.fields.LogFilePath,
+				LogFile:      tt.fields.LogFile,
+				au:           tt.fields.au,
+				ForceNewLine: tt.fields.ForceNewLine,
+			}
+			if got := l.CenteredLevelName(tt.args.level); got != tt.want {
+				t.Errorf("CenteredLevelName() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
