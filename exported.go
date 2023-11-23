@@ -23,6 +23,10 @@ func SetLevel(level level) {
 	_defaultLogger.SetLevel(level)
 }
 
+func SetLevelByString(level string) {
+	_defaultLogger.SetLevelByString(level)
+}
+
 // Fatal is equivalent to Print() followed by a call to os.Exit(1).
 func Fatal(v ...any) {
 	_defaultLogger.Fatal(v...)
