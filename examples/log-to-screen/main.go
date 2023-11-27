@@ -4,11 +4,14 @@ import log "github.com/jlentink/yaglogger"
 
 func main() {
 	log.GetInstance().LogToScreen = true
-	log.SetLevelByString("all")
+	log.SetLevelByString("debug")
 	log.GetInstance().LogFilePath = "./yaglogger.log"
 	// log.SetLevel(log.Info())
+	log.Error("Error")
+	log.Warn("Warn")
 	log.Debug("Debug")
 	log.Info("Info")
+	log.Fatal("Fatal")
 
 	// log.PrintMessagef("This is a message")
 	log.GetInstance().SetDebug(false)

@@ -9,14 +9,14 @@ type LogLevel uint
 
 // All log levels
 const (
-	LevelFatal LogLevel = iota
+	LevelNone LogLevel = iota
+	LevelFatal
 	LevelError
 	LevelWarn
 	LevelInfo
 	LevelDebug
 	LevelTrace
 	LevelAll
-	LevelNone
 )
 
 var levelNames = map[LogLevel]string{
