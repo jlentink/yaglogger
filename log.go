@@ -3,6 +3,7 @@ package yaglogger
 import (
 	"fmt"
 	"github.com/logrusorgru/aurora/v4"
+	"github.com/mattn/go-isatty"
 	"io"
 	"os"
 	"reflect"
@@ -12,7 +13,7 @@ import (
 
 // Logger Struture
 type Logger struct {
-	Level        level
+	Level        LogLevel
 	Output       LevelOutput
 	Format       Format
 	LogToScreen  bool
@@ -22,26 +23,29 @@ type Logger struct {
 	ForceNewLine bool
 }
 
-func (l *Logger) SetLevelByString(level string) {
-
+func (l *Logger) SetLevelByString(level string) LogLevel {
 	switch strings.ToLower(level) {
-	case "fatal":
+	case LevelFatal.String():
 		l.Level = LevelFatal
-	case "error":
+	case LevelError.String():
 		l.Level = LevelError
-	case "warn":
+	case LevelWarn.String(), "warning":
 		l.Level = LevelWarn
-	case "info":
+	case LevelInfo.String():
 		l.Level = LevelInfo
-	case "debug":
+	case LevelDebug.String():
 		l.Level = LevelDebug
-	case "trace":
+	case LevelTrace.String():
 		l.Level = LevelTrace
-	case "all":
+	case LevelAll.String():
 		l.Level = LevelAll
+	case LevelNone.String():
+		l.Level = LevelNone
 	default:
-		l.Fatalf("Unknown log level: %s", level)
+		l.Level = LevelAll
+		l.Error("Unknown log level: %s", level)
 	}
+	return l.Level
 }
 
 // EnableColors enables/disables colors
@@ -56,7 +60,7 @@ func (l *Logger) GetColours() *aurora.Aurora {
 }
 
 // Log is the generic logging function
-func (l *Logger) Log(level level, message string, a ...any) {
+func (l *Logger) Log(level LogLevel, message string, a ...any) {
 	var logDate = time.Now().Format(l.Format.DateLayout)
 
 	message = strings.TrimSuffix(message, "\n")
@@ -87,10 +91,17 @@ func (l *Logger) logFileOpen() io.Writer {
 	return file
 }
 
-func (l *Logger) screenLog(level level, message, logDate string, a ...any) {
+func (l *Logger) screenLog(level LogLevel, message, logDate string, a ...any) {
 	var logLevel string
+	var useColor = l.Format.Color
+
+	if !isatty.IsTerminal(l.LevelOutput(level).Fd()) {
+		useColor = false
+
+	}
+
 	if l.Format.ShowDate {
-		if l.Format.Color {
+		if useColor {
 			logDate = aurora.Sprintf(aurora.Bold(logDate))
 		}
 		if l.Format.ShowLevel {
@@ -101,8 +112,8 @@ func (l *Logger) screenLog(level level, message, logDate string, a ...any) {
 	}
 
 	if l.Format.ShowLevel {
-		logLevel = l.LevelName(level)
-		if l.Format.Color {
+		logLevel = l.CenteredLevelName(level)
+		if useColor {
 			logLevel = aurora.Sprintf(l.LevelColor(level, aurora.Bold(logLevel)))
 		}
 	}
@@ -110,14 +121,14 @@ func (l *Logger) screenLog(level level, message, logDate string, a ...any) {
 	_, _ = l.Fprint(l.LevelOutput(level), logLine)
 }
 
-func (l *Logger) fileLog(level level, message, logDate string, a ...any) {
+func (l *Logger) fileLog(level LogLevel, message, logDate string, a ...any) {
 	var logLevel string
 	if !l.Format.ShowDate {
 		logDate = ""
 	}
 
 	if l.Format.ShowLevel {
-		logLevel = l.LevelName(level)
+		logLevel = l.CenteredLevelName(level)
 	}
 	//goland:noinspection GoUnhandledErrorResult
 	fmt.Fprintf(l.LogFile, "[ "+logDate+logLevel+" ] "+message+l.Format.EndOfLine, a...)
@@ -181,7 +192,7 @@ func (l *Logger) Panicf(message string, a ...any) {
 }
 
 // LevelOutput returns the output stream for the given level
-func (l *Logger) LevelOutput(level level) io.Writer {
+func (l *Logger) LevelOutput(level LogLevel) *os.File {
 	switch level {
 	case LevelFatal:
 		return l.Output.Fatal
@@ -200,28 +211,17 @@ func (l *Logger) LevelOutput(level level) io.Writer {
 	}
 }
 
-// LevelName returns the name of the given level
-func (l *Logger) LevelName(level level) string {
-	switch level {
-	case LevelFatal:
-		return "  FATAL  "
-	case LevelError:
-		return "  ERROR  "
-	case LevelWarn:
-		return " WARNING "
-	case LevelInfo:
-		return "  INFO   "
-	case LevelDebug:
-		return "  DEBUG  "
-	case LevelTrace:
-		return "  TRACE  "
-	default:
-		return " UNKNOWN "
-	}
+// CenteredLevelName returns the name of the given level
+func (l *Logger) CenteredLevelName(level LogLevel) string {
+	levelName := strings.ToUpper(level.String())
+	width := 10
+	padding := strings.Repeat(" ", (width-len(levelName))/2)
+	formatted := fmt.Sprintf("%s%s%s", padding, levelName, padding)
+	return formatted[0 : width-1]
 }
 
 // LevelColor returns the color of the given level
-func (l *Logger) LevelColor(level level, message any) aurora.Value {
+func (l *Logger) LevelColor(level LogLevel, message any) aurora.Value {
 	switch level {
 	case LevelFatal:
 		return aurora.Red(message)
@@ -241,12 +241,12 @@ func (l *Logger) LevelColor(level level, message any) aurora.Value {
 }
 
 // IsLogLevelEnabled returns true if the given level is enabled
-func (l *Logger) IsLogLevelEnabled(level level) bool {
+func (l *Logger) IsLogLevelEnabled(level LogLevel) bool {
 	return l.Level >= level
 }
 
 // SetLevel sets the log level
-func (l *Logger) SetLevel(level level) *Logger {
+func (l *Logger) SetLevel(level LogLevel) *Logger {
 	if level >= LevelFatal && level <= LevelAll {
 		l.Level = level
 	}
@@ -275,30 +275,31 @@ func (l *Logger) newLine(in string) string {
 }
 
 // Print prints message
-func (l *Logger) Print(v ...any) {
-	l.Fprint(l.Output.Msg, fmt.Sprint(v...))
+func (l *Logger) Print(v ...any) (n int, err error) {
+	return l.Fprint(l.Output.Msg, fmt.Sprint(v...))
 }
 
 // Printf prints message with formatting
-func (l *Logger) Printf(format string, a ...any) {
-	l.Fprintf(l.Output.Msg, format, a...)
+func (l *Logger) Printf(format string, a ...any) (n int, err error) {
+	return l.Fprintf(l.Output.Msg, format, a...)
 }
 
 // PrintDebug prints message with debug level
-func (l *Logger) PrintDebug(format any) {
+func (l *Logger) PrintDebug(format any) (n int, err error) {
 	if l.IsLogLevelEnabled(LevelDebug) {
 		if l.isInstanceOf(format, aurora.Value{}) {
 			format = aurora.Sprintf("%s", format)
 		}
-		l.Fprint(l.Output.Msg, format)
+		return l.Fprint(l.Output.Msg, format)
 	}
 }
 
 // PrintDebugf prints message with debug level and formatting
-func (l *Logger) PrintDebugf(format string, a ...any) {
+func (l *Logger) PrintDebugf(format string, a ...any) (n int, err error) {
 	if l.IsLogLevelEnabled(LevelDebug) {
-		l.Fprintf(l.Output.Msg, format, a...)
+		return l.Fprintf(l.Output.Msg, format, a...)
 	}
+	return -1, nil
 }
 
 func (l *Logger) Fprint(w io.Writer, a ...any) (n int, err error) {

@@ -18,7 +18,7 @@ func SetLogger(logger *Logger) {
 }
 
 // SetLevel sets the log level
-func SetLevel(level level) {
+func SetLevel(level LogLevel) {
 	log.SetFlags(0)
 	_defaultLogger.SetLevel(level)
 }
