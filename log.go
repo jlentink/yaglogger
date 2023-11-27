@@ -275,30 +275,32 @@ func (l *Logger) newLine(in string) string {
 }
 
 // Print prints message
-func (l *Logger) Print(v ...any) {
-	l.Fprint(l.Output.Msg, fmt.Sprint(v...))
+func (l *Logger) Print(v ...any) (n int, err error) {
+	return l.Fprint(l.Output.Msg, fmt.Sprint(v...))
 }
 
 // Printf prints message with formatting
-func (l *Logger) Printf(format string, a ...any) {
-	l.Fprintf(l.Output.Msg, format, a...)
+func (l *Logger) Printf(format string, a ...any) (n int, err error) {
+	return l.Fprintf(l.Output.Msg, format, a...)
 }
 
 // PrintDebug prints message with debug level
-func (l *Logger) PrintDebug(format any) {
+func (l *Logger) PrintDebug(format any) (n int, err error) {
 	if l.IsLogLevelEnabled(LevelDebug) {
 		if l.isInstanceOf(format, aurora.Value{}) {
 			format = aurora.Sprintf("%s", format)
 		}
-		l.Fprint(l.Output.Msg, format)
+		return l.Fprint(l.Output.Msg, format)
 	}
+	return -1, nil
 }
 
 // PrintDebugf prints message with debug level and formatting
-func (l *Logger) PrintDebugf(format string, a ...any) {
+func (l *Logger) PrintDebugf(format string, a ...any) (n int, err error) {
 	if l.IsLogLevelEnabled(LevelDebug) {
-		l.Fprintf(l.Output.Msg, format, a...)
+		return l.Fprintf(l.Output.Msg, format, a...)
 	}
+	return -1, nil
 }
 
 func (l *Logger) Fprint(w io.Writer, a ...any) (n int, err error) {
