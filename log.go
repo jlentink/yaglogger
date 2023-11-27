@@ -292,6 +292,7 @@ func (l *Logger) PrintDebug(format any) (n int, err error) {
 		}
 		return l.Fprint(l.Output.Msg, format)
 	}
+	return -1, nil
 }
 
 // PrintDebugf prints message with debug level and formatting
