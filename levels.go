@@ -20,6 +20,7 @@ const (
 )
 
 var levelNames = map[LogLevel]string{
+	LevelNone:  "none",
 	LevelFatal: "fatal",
 	LevelError: "error",
 	LevelWarn:  "warn",
@@ -27,7 +28,6 @@ var levelNames = map[LogLevel]string{
 	LevelDebug: "debug",
 	LevelTrace: "trace",
 	LevelAll:   "all",
-	LevelNone:  "none",
 }
 
 func (l LogLevel) String() string {

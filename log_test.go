@@ -136,3 +136,63 @@ func TestLogger_CenteredLevelName(t *testing.T) {
 		})
 	}
 }
+func TestLogger_EnableColors(t *testing.T) {
+	type fields struct {
+		Level        LogLevel
+		Output       LevelOutput
+		Format       Format
+		LogToScreen  bool
+		LogFilePath  string
+		LogFile      io.Writer
+		au           *aurora.Aurora
+		ForceNewLine bool
+	}
+	type args struct {
+		c  bool
+		au bool
+	}
+	type want struct {
+		color bool
+		au    *aurora.Aurora
+	}
+	tests := []struct {
+		name   string
+		fields fields
+		args   args
+		want   want
+	}{
+		{
+			name: "TestLogger_EnableColors - true",
+			args: args{
+				c: true,
+			},
+			want: want{
+				color: true,
+				au:    aurora.New(aurora.WithColors(true)),
+			},
+		},
+		{
+			name: "TestLogger_EnableColors - false",
+			args: args{
+				c: false,
+			},
+			want: want{
+				color: false,
+				au:    aurora.New(aurora.WithColors(false)),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := New()
+			l.EnableColors(tt.args.c)
+			if l.au.Config().Colors != tt.want.au.Config().Colors {
+				t.Errorf("EnableColors() [au] = %v, want %v", l.au.Config().Colors, tt.want.au.Config().Colors)
+			}
+
+			if tt.want.color != l.Format.Color {
+				t.Errorf("EnableColors() [color] = %v, want %v", l.Format.Color, tt.want.color)
+			}
+		})
+	}
+}
