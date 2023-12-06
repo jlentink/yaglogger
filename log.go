@@ -7,20 +7,22 @@ import (
 	"io"
 	"os"
 	"reflect"
+	"runtime"
 	"strings"
 	"time"
 )
 
-// Logger Struture
+// Logger Structure
 type Logger struct {
-	Level        LogLevel
-	Output       LevelOutput
-	Format       Format
-	LogToScreen  bool
-	LogFilePath  string
-	LogFile      io.Writer
-	au           *aurora.Aurora
-	ForceNewLine bool
+	Level           LogLevel
+	Output          LevelOutput
+	Format          Format
+	LogToScreen     bool
+	LogFilePath     string
+	LogFile         io.Writer
+	au              *aurora.Aurora
+	ForceNewLine    bool
+	ShowLogLocation bool
 }
 
 func (l *Logger) SetLevelByString(level string) LogLevel {
@@ -59,23 +61,38 @@ func (l *Logger) GetColours() *aurora.Aurora {
 	return l.au
 }
 
+func (l *Logger) GetFileWithLine() string {
+	for i := 2; i < 15; i++ {
+		_, file, line, ok := runtime.Caller(i)
+		if ok && !strings.Contains(file, "yaglogger") || ok && strings.Contains(file, "main.go") {
+			return fmt.Sprintf("%s:%d", file, line)
+		}
+		//fmt.Println(file, line)
+	}
+	return ""
+}
+
 // Log is the generic logging function
 func (l *Logger) Log(level LogLevel, message string, a ...any) {
 	var logDate = time.Now().Format(l.Format.DateLayout)
+	location := ""
+	if l.ShowLogLocation {
+		location = l.GetFileWithLine()
+	}
 
 	message = strings.TrimSuffix(message, "\n")
 	message = strings.TrimSuffix(message, "\r")
 
 	if l.IsLogLevelEnabled(level) {
 		if l.LogToScreen {
-			l.screenLog(level, message, logDate, a...)
+			l.screenLog(level, message, logDate, location, a...)
 		}
 
 		if l.LogFilePath != "" {
 			if l.LogFile == nil {
 				l.LogFile = l.logFileOpen()
 			}
-			l.fileLog(level, message, logDate, a...)
+			l.fileLog(level, message, logDate, location, a...)
 		}
 	}
 }
@@ -91,7 +108,7 @@ func (l *Logger) logFileOpen() io.Writer {
 	return file
 }
 
-func (l *Logger) screenLog(level LogLevel, message, logDate string, a ...any) {
+func (l *Logger) screenLog(level LogLevel, message, logDate, location string, a ...any) {
 	var logLevel string
 	var useColor = l.Format.Color
 
@@ -117,11 +134,14 @@ func (l *Logger) screenLog(level LogLevel, message, logDate string, a ...any) {
 			logLevel = aurora.Sprintf(l.LevelColor(level, aurora.Bold(logLevel)))
 		}
 	}
-	logLine := fmt.Sprintf("[ "+logDate+logLevel+" ] "+message+l.Format.EndOfLine, a...)
+	if location != "" {
+		location = " - " + location + " "
+	}
+	logLine := fmt.Sprintf("[ "+logDate+logLevel+" "+location+"] "+message+l.Format.EndOfLine, a...)
 	_, _ = l.Fprint(l.LevelOutput(level), logLine)
 }
 
-func (l *Logger) fileLog(level LogLevel, message, logDate string, a ...any) {
+func (l *Logger) fileLog(level LogLevel, message, logDate, location string, a ...any) {
 	var logLevel string
 	if !l.Format.ShowDate {
 		logDate = ""
@@ -130,8 +150,11 @@ func (l *Logger) fileLog(level LogLevel, message, logDate string, a ...any) {
 	if l.Format.ShowLevel {
 		logLevel = l.CenteredLevelName(level)
 	}
+	if location != "" {
+		location = " - " + location + " "
+	}
 	//goland:noinspection GoUnhandledErrorResult
-	fmt.Fprintf(l.LogFile, "[ "+logDate+logLevel+" ] "+message+l.Format.EndOfLine, a...)
+	fmt.Fprintf(l.LogFile, "[ "+logDate+logLevel+" "+location+"] "+message+l.Format.EndOfLine, a...)
 }
 
 // Trace logs a message with level trace
@@ -275,13 +298,15 @@ func (l *Logger) newLine(in string) string {
 }
 
 // Print prints message
-func (l *Logger) Print(v ...any) (n int, err error) {
-	return l.Fprint(l.Output.Msg, fmt.Sprint(v...))
+func (l *Logger) Print(v ...any) {
+	//goland:noinspection GoUnhandledErrorResult
+	l.Fprint(l.Output.Msg, fmt.Sprint(v...))
 }
 
 // Printf prints message with formatting
-func (l *Logger) Printf(format string, a ...any) (n int, err error) {
-	return l.Fprintf(l.Output.Msg, format, a...)
+func (l *Logger) Printf(format string, a ...any) {
+	//goland:noinspection GoUnhandledErrorResult
+	l.Fprintf(l.Output.Msg, format, a...)
 }
 
 // PrintDebug prints message with debug level
@@ -290,7 +315,8 @@ func (l *Logger) PrintDebug(format any) (n int, err error) {
 		if l.isInstanceOf(format, aurora.Value{}) {
 			format = aurora.Sprintf("%s", format)
 		}
-		return l.Fprint(l.Output.Msg, format)
+		//goland:noinspection GoUnhandledErrorResult
+		l.Fprint(l.Output.Msg, format)
 	}
 	return -1, nil
 }
@@ -298,7 +324,8 @@ func (l *Logger) PrintDebug(format any) (n int, err error) {
 // PrintDebugf prints message with debug level and formatting
 func (l *Logger) PrintDebugf(format string, a ...any) (n int, err error) {
 	if l.IsLogLevelEnabled(LevelDebug) {
-		return l.Fprintf(l.Output.Msg, format, a...)
+		//goland:noinspection GoUnhandledErrorResult
+		l.Fprintf(l.Output.Msg, format, a...)
 	}
 	return -1, nil
 }

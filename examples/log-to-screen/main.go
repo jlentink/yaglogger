@@ -5,6 +5,8 @@ import log "github.com/jlentink/yaglogger"
 func main() {
 	log.GetInstance().LogToScreen = true
 	log.SetLevelByString("debug")
+	log.GetInstance().ShowLogLocation = true
+	log.SetLevelByString("all")
 	log.GetInstance().LogFilePath = "./yaglogger.log"
 	// log.SetLevel(log.Info())
 	log.Error("Error")
@@ -25,5 +27,5 @@ func main() {
 	log.Print(1)
 	log.Print(1.1)
 	log.Info("Info")
-
+	log.Fatal("dsdsds")
 }

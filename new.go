@@ -27,9 +27,10 @@ func New() *Logger {
 			EndOfLine:  "\n",
 			Prefix:     "",
 		},
-		LogToScreen:  true,
-		LogFilePath:  "",
-		au:           aurora.New(aurora.WithColors(true)),
-		ForceNewLine: true,
+		LogToScreen:     true,
+		LogFilePath:     "",
+		au:              aurora.New(aurora.WithColors(true)),
+		ForceNewLine:    true,
+		ShowLogLocation: true,
 	}
 }
