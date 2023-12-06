@@ -310,7 +310,7 @@ func (l *Logger) Printf(format string, a ...any) {
 }
 
 // PrintDebug prints message with debug level
-func (l *Logger) PrintDebug(format any) {
+func (l *Logger) PrintDebug(format any) (n int, err error) {
 	if l.IsLogLevelEnabled(LevelDebug) {
 		if l.isInstanceOf(format, aurora.Value{}) {
 			format = aurora.Sprintf("%s", format)
@@ -318,14 +318,16 @@ func (l *Logger) PrintDebug(format any) {
 		//goland:noinspection GoUnhandledErrorResult
 		l.Fprint(l.Output.Msg, format)
 	}
+	return -1, nil
 }
 
 // PrintDebugf prints message with debug level and formatting
-func (l *Logger) PrintDebugf(format string, a ...any) {
+func (l *Logger) PrintDebugf(format string, a ...any) (n int, err error) {
 	if l.IsLogLevelEnabled(LevelDebug) {
 		//goland:noinspection GoUnhandledErrorResult
 		l.Fprintf(l.Output.Msg, format, a...)
 	}
+	return -1, nil
 }
 
 func (l *Logger) Fprint(w io.Writer, a ...any) (n int, err error) {
