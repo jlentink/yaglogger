@@ -299,11 +299,13 @@ func (l *Logger) newLine(in string) string {
 
 // Print prints message
 func (l *Logger) Print(v ...any) {
+	//goland:noinspection GoUnhandledErrorResult
 	l.Fprint(l.Output.Msg, fmt.Sprint(v...))
 }
 
 // Printf prints message with formatting
 func (l *Logger) Printf(format string, a ...any) {
+	//goland:noinspection GoUnhandledErrorResult
 	l.Fprintf(l.Output.Msg, format, a...)
 }
 
@@ -313,6 +315,7 @@ func (l *Logger) PrintDebug(format any) {
 		if l.isInstanceOf(format, aurora.Value{}) {
 			format = aurora.Sprintf("%s", format)
 		}
+		//goland:noinspection GoUnhandledErrorResult
 		l.Fprint(l.Output.Msg, format)
 	}
 }
@@ -320,6 +323,7 @@ func (l *Logger) PrintDebug(format any) {
 // PrintDebugf prints message with debug level and formatting
 func (l *Logger) PrintDebugf(format string, a ...any) {
 	if l.IsLogLevelEnabled(LevelDebug) {
+		//goland:noinspection GoUnhandledErrorResult
 		l.Fprintf(l.Output.Msg, format, a...)
 	}
 }
